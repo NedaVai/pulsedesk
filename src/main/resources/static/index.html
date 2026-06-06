@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PulseDesk</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        header {
+            background-color: #333333;S
+            color: white;
+            padding: 20px 40px;
+            margin-bottom: 32px;
+        }
+
+        header h1 { font-size: 24px; }
+        header p { font-size: 13px; color: #ccc; margin-top: 4px; }
+
+        .container {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 0 20px 40px 20px;
+        }
+
+        h2 {
+            font-size: 17px;
+            margin-bottom: 12px;
+            margin-top: 32px;
+            color: #333333;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 6px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 85px;
+            padding: 10px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: Arial, sans-serif;
+            resize: vertical;
+            margin-top: 8px;
+            background-color: white;
+        }
+
+        textarea:focus {
+            border-color: #333333;
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 8px 20px;
+            font-size: 14px;
+            background-color: #333333;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover { background-color: #555555; }
+
+        .refresh-btn {
+            font-size: 12px;
+            padding: 3px 10px;
+            margin-left: 8px;
+            margin-top: 0;
+            vertical-align: middle;
+            background-color: #888;
+        }
+
+        .refresh-btn:hover { background-color: #666; }
+
+        #message {
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            background: white;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        th {
+            background-color: #333333;
+            color: white;
+            padding: 10px 12px;
+            text-align: left;
+            font-weight: normal;
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background-color: #f9f9f9; }
+
+        .empty { color: #aaa; font-style: italic; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>PulseDesk</h1>
+    <p>Submit a comment below. A support ticket will be created if an issue is logged.</p>
+</header>
+
+<div class="container">
+
+    <h2>Submit a Comment</h2>
+    <textarea id="commentText" placeholder="Type your comment here..."></textarea>
+    <br>
+    <button onclick="submitComment()">Submit</button>
+    <p id="message"></p>
+
+    <h2>
+        Comments
+        <button class="refresh-btn" onclick="loadComments()">↻ Refresh</button>
+    </h2>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Comment</th>
+            <th>Submitted At</th>
+        </tr>
+        </thead>
+        <tbody id="comments-body">
+        <tr><td colspan="3" class="empty">Loading...</td></tr>
+        </tbody>
+    </table>
+
+    <h2>
+        Tickets
+        <button class="refresh-btn" onclick="loadTickets()">↻ Refresh</button>
+    </h2>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Title</th>
+            <th>Category</th>
+            <th>Priority</th>
+            <th>Summary</th>
+        </tr>
+        </thead>
+        <tbody id="tickets-body">
+        <tr><td colspan="5" class="empty">Loading...</td></tr>
+        </tbody>
+    </table>
+
+</div>
+
+<script>
+    loadComments();
+    loadTickets();
+
+    function submitComment() {
+        const text = document.getElementById('commentText').value.trim();
+        const msg = document.getElementById('message');
+
+        if (!text) {
+            msg.style.color = '#c0392b';
+            msg.textContent = 'Please enter a comment.';
+            return;
+        }
+
+        msg.style.color = '#333';
+        msg.textContent = 'Submitting...';
+
+        fetch('/comments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: text })
+        })
+            .then(response => {
+                if (!response.ok) throw new Error('Error');
+                return response.json();
+            })
+            .then(() => {
+                msg.style.color = '#27ae60';
+                msg.textContent = 'Comment submitted!';
+                document.getElementById('commentText').value = '';
+                setTimeout(() => {
+                    loadComments();
+                    loadTickets();
+                    msg.textContent = '';
+                }, 2000);
+            })
+            .catch(() => {
+                msg.style.color = '#c0392b';
+                msg.textContent = 'Something went wrong, please try again.';
+            });
+    }
+
+    function loadComments() {
+        fetch('/comments')
+            .then(r => r.json())
+            .then(comments => {
+                const tbody = document.getElementById('comments-body');
+
+                if (comments.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" class="empty">No comments yet</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = '';
+
+                comments.forEach(c => {
+                    const row = document.createElement('tr');
+
+                    const idCell = document.createElement('td');
+                    idCell.textContent = c.id;
+
+                    const textCell = document.createElement('td');
+                    textCell.textContent = c.text;
+
+                    const dateCell = document.createElement('td');
+                    dateCell.textContent = formatDate(c.createdAt);
+
+                    row.appendChild(idCell);
+                    row.appendChild(textCell);
+                    row.appendChild(dateCell);
+
+                    tbody.appendChild(row);
+                });
+            });
+    }
+
+    function loadTickets() {
+        fetch('/tickets')
+            .then(r => r.json())
+            .then(tickets => {
+                const tbody = document.getElementById('tickets-body');
+                if (tickets.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="empty">No tickets yet</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = tickets.map(t => `
+                <tr>
+                    <td>${t.id}</td>
+                    <td>${t.title}</td>
+                    <td>${t.category}</td>
+                    <td>${t.priority}</td>
+                    <td>${t.summary}</td>
+                </tr>
+            `).join('');
+            });
+    }
+
+    function formatDate(dateArray) {
+        if (!dateArray) return 'N/A';
+        if (Array.isArray(dateArray)) {
+            const [year, month, day, hour, minute] = dateArray;
+            return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')} ${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')}`;
+        }
+        return new Date(dateArray).toLocaleString();
+    }
+</script>
+
+</body>
+</html>
