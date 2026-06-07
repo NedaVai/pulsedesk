@@ -50,5 +50,5 @@ PulseDesk is a Spring BOOT REST API that accepts user comments, uses Hugging Fac
 - hf-inference provider no longer supports mistralai/Mistral-7B-Instruct, so meta-llama/Llama-3.1-8B-Instruct was used instead.
 
 ## Known Limitations
--System.out.println was used for reponse logging instead of SLF4J. It was kept intentionally for visibility during review.
--Ai response parsing uses String searching rather than a JSON library. It works reliably for the current response format, but could still be improved.
+- System.out.println was used for reponse logging instead of SLF4J. It was kept intentionally for visibility during review.
+- Ai response parsing uses String searching rather than a JSON library. It works reliably for the current response format, but could still be improved.
